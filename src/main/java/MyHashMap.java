@@ -1,4 +1,5 @@
 import java.util.Arrays;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 
 /**
@@ -6,36 +7,25 @@ import java.util.Objects;
  */
 public class MyHashMap<K, V> {
     private Node<K, V>[] objects;
-    private int size = -1;
+    private int size = 0;
     private static final double LOAD_FACTOR = 0.75;
 
     public void put(K key, V value) {
-        growArray();
-        Node<K, V> node = new Node<>(key, value);
-        putNode(node);
+        grow();
+        Node<K, V> newNode = new Node<>(key, value);
+        putNode(newNode);
     }
 
 
-    //сделать если налл что бы
-    @Override
-    public String toString() {
-
-        for (Node<K, V> node : objects) {
-            if (node != null)
-                System.out.print(node + " ");
-        }
-
-        return "MyHashMap{" + Arrays.toString(objects) +
-                ", size=" + size;
+    public int size() {
+        return size;
     }
 
     private void putNode(Node<K, V> node) {
-        growArray();
         int index = getIndexFromHash(node.getKey());
         Node<K, V> сurrentNode = objects[index];
         if (сurrentNode == null) {
             objects[index] = node;
-            size++;
         } else {
             // у нас в бакете уже что-то есть и надо понимать что там
             // 1 нода или связный список?
@@ -46,33 +36,21 @@ public class MyHashMap<K, V> {
                     tempNode.value = node.value;
                     return;
                 }
-
                 сurrentNode = tempNode;
                 tempNode = tempNode.next;
             }
-
             сurrentNode.next = node;
-            size++;
         }
+        size++;
     }
 
-    private int getIndexFromHash(K key) {
-        int hashcode;
-        if (key == null) {
-            hashcode = 0;
-        } else {
-            hashcode = key.hashCode();
-        }
-        return hashcode % objects.length;
-    }
-
-    private void growArray() {
+    private void grow() {
         if (objects == null || objects.length == 0) {
             objects = new Node[16];
         } else if (size >= (int) (objects.length * LOAD_FACTOR)) {
             size = 0;
             int newCapacity = objects.length << 1;
-            Node<K, V>[] tempObjects = objects; //сохраняем ссылку на старый массив
+            Node<K, V>[] tempObjects = objects;    //сохраняем ссылку на старый массив
             objects = new Node[newCapacity];
             for (Node<K, V> node : tempObjects) {
                 if (node != null) {
@@ -87,8 +65,38 @@ public class MyHashMap<K, V> {
         }
     }
 
+    private int getIndexFromHash(K key) {
+        int hashcode;
+        if (key == null) {
+            hashcode = 0;
+        } else {
+            hashcode = key.hashCode();
+        }
+        return Math.abs(hashcode % objects.length);
+    }
+
     public V get(K key) {
+        int index = getIndexFromHash(key); //мы находим ячейку массива где находится элемент
+        Node<K, V> currentNode = objects[index];
+
+        while (currentNode != null) {
+            if (Objects.equals(currentNode.key, key)) {
+                return currentNode.value;
+            }
+            currentNode = currentNode.next;
+        }
         return null;
+    }
+
+    //сделать если налл что бы
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        for (Node<K, V> node : objects) {
+            if (node != null)
+                sb = sb.append(node);
+        }
+        return sb.toString();
     }
 
     class Node<K, V> {
@@ -133,7 +141,7 @@ public class MyHashMap<K, V> {
 
         @Override
         public String toString() {
-            return "Node{" +
+            return "{" +
                     "key=" + key +
                     ", value=" + value +
                     '}';
